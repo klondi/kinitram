@@ -72,6 +72,10 @@ a sleep clause.
 If you want to embed the initram in the kernel use the generated:
 /boot/my-initramfs.cpio
 
+You'll notice some paths are hardcoded this code is intended to be deployed at
+/usr/src/initram
+This may change on the future though.
+
 HACKING
 ===============================================================================
 Contributions are always welcome if they adhere to the license. Before you
