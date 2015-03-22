@@ -1,0 +1,2 @@
+Add x86 support (check use of lib instead of lib64)
+Add suport for static network instead of dhcp based ones

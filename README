@@ -1,0 +1,80 @@
+ABOUT
+===============================================================================
+kinitram is intended to be a small simple initram which can be used to unlock
+luks hard drives (specially remotely) and get access on early boot to fix
+issues. It also intends to be embedded on a kernel image so it can be used to
+securely control the system integrity using Secure Boot.
+
+So yeah it's kind of a lightweight poor man's KVM.
+
+HISTORY
+===============================================================================
+This initram was originally developed for use at both the xiscosoft servers and
+the Lejklon company project.
+The main reason behind it's development was getting a secure way to unlock luks
+encrypted root partitions on servers, whilst making tampering with them
+(without physical access) hard.
+
+It was originally distributed under an NDA to some Gentoo Hardened users as I
+expected Lejklon to start up with the intention of freeing it later when the
+company had gotten some clients and allowing them to audit our code would
+become important.
+
+Sadly that never happened as we couldn't find an investor willing to invest on
+us. Anyways since it is now clear the company will not take off I want to
+release this code in the hopes it is useful to anybody else.
+
+LICENSE
+===============================================================================
+This code is licensed under an Affero GPL v3 license or at your choice a higher
+version of that license released by the Free Software Foundation.
+
+If you contribute code to this project you agree to release it under this same
+license and agree that you have permission and are legally entitled to do so.
+In case you aren't you agree to take full legal liability for that.
+
+INSTRUCTIONS
+===============================================================================
+You need to create the dropbear keys in etc/dropbear
+# dropbearkey -t rsa -f initramfs/etc/dropbear/dropbear_rsa_host_key
+# dropbearkey -t dss -f initramfs/etc/dropbear/dropbear_dss_host_key
+
+Also push your keys in root/.ssh/authorized_keys and
+./initramfs/owner/.ssh/authorized_keys
+# cat mykey.pub > initramfs/root/.ssh/authorized_keys
+# cat mykey.pub > initramfs/owner/.ssh/authorized_keys
+
+Finally you need to create the crypto device to hold the master key for
+unlocking other devices, this is done as follows:
+# dd if=/dev/zero of=initramfs/crypto bs=1024 count=2052
+# losetup /dev/loop0 initramfs/crypto
+# /sbin/cryptsetup luksFormat /dev/loop0
+# /sbin/cryptsetup luksOpen /dev/loop0 ckey
+# dd if=/dev/urandom of=/dev/mapper/ckey
+# sync
+# /sbin/cryptsetup luksAddKey /dev/myroothd /dev/mapper/ckey
+# /sbin/cryptsetup close /dev/mapper/ckey
+# losetup -d /dev/loop0
+
+As you can suppose you have to replace /dev/myroothd for the device you want to
+decrypt (this depends on your system but it may be a swap partition and a
+root device or more partitions too). So yeah, this also means you may need to
+call the luksAddKey line more than once.
+
+The root account will give you an early shell whilst the owner account is
+only allowed to provide the password to mount the main hard drive.
+
+You may want to go over initramfs/init for example the early shell access will
+be dropped before letting the main init system take over which may not be what
+you want you may be able to prevent that from hapening by for example adding
+a sleep clause.
+
+If you want to embed the initram in the kernel use the generated:
+/boot/my-initramfs.cpio
+
+HACKING
+===============================================================================
+Contributions are always welcome if they adhere to the license. Before you
+contribute something think about keeping it reasonably modular as most users
+will not have exactly your use case. BB shell is prefered as the initramfs
+shouldn't need compilation.

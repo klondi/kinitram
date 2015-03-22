@@ -1,0 +1,40 @@
+#!/bin/busybox sh
+
+rescue_shell() {
+   echo "Something went wrong dropping to a rescue shell (don't kill me)"
+   busybox --install -s
+   exec /bin/bb
+}
+
+# Mount the /proc and /sys filesystems.
+mount -t sysfs none /sys -o rw,nosuid,nodev,noexec,relatime
+echo 1 > /sys/devices/system/cpu/microcode/reload
+mount -t proc none /proc -o rw,nosuid,nodev,noexec,relatime
+mount -t devtmpfs none /dev -o rw,nosuid,relatime
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts -o rw,nosuid,noexec,relatime,gid=5,mode=620
+
+/sbin/init_net || rescue_shell
+/sbin/init_dropbear ||  rescue_shell
+#This is not critical for boot since the public IP could be obtained otherwise
+/sbin/init_ipdaemon
+
+/sbin/mount_root || rescue_shell
+
+/sbin/stop_ipdaemon
+/sbin/stop_dropbear
+/sbin/stop_net
+
+sleep 1
+
+# Clean up
+kill -s TERM -1 && sleep 1
+kill -s KILL -1
+
+umount /dev/pts
+umount /dev
+umount /sys
+umount /proc
+
+# Boot the real thing.
+exec switch_root /mnt/root /sbin/init

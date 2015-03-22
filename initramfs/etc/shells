@@ -1,0 +1,4 @@
+# /etc/shells: valid login shells
+/bin/bb
+/bin/busybox
+/bin/mount_crypt

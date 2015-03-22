@@ -1,0 +1,20 @@
+#!/bin/busybox sh
+
+losetup -r /dev/loop0 /crypto || exit 1
+
+/sbin/local_mount_root
+
+[ -e /dev/mapper/ckey ] || exit 1
+
+#TODO: after migration add exits
+/sbin/cryptsetup luksOpen /dev/sda3 cryptosda3 --allow-discards -d /dev/mapper/ckey -l 4096
+/sbin/cryptsetup luksOpen /dev/sdb3 cryptosdb3 --allow-discards -d /dev/mapper/ckey -l 4096
+/sbin/cryptsetup luksOpen /dev/sdc3 cryptosdc3 --allow-discards -d /dev/mapper/ckey -l 4096
+/sbin/cryptsetup close /dev/mapper/ckey
+losetup -d /dev/loop0
+
+#Scan for devices
+/sbin/btrfs device scan || exit 1
+
+# Mount the root filesystem.
+mount -t btrfs /dev/mapper/cryptosda3 /mnt/root -odegraded,ro || mount -t btrfs /dev/mapper/cryptosdb3 /mnt/root -odegraded,ro || exit 1

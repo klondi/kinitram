@@ -1,0 +1,4 @@
+#!/bin/bb
+
+pkill -9 -P $( cat /var/run/ipdaemon )
+kill -9 $( cat /var/run/ipdaemon )

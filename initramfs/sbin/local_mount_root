@@ -1,0 +1,12 @@
+#!/bin/busybox sh
+
+tokill=$$
+(
+	while [ ! -e /dev/mapper/ckey ]; do
+		sleep 1;
+	done;
+	kill $tokill && sleep 1
+	kill -9 $tokill
+) &
+
+exec /bin/mount_crypt
