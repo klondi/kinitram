@@ -55,6 +55,7 @@ files="$(findlibs $elf_files)
 
 rm -r /usr/src/initram/initramfs.tmp
 cp /usr/src/initram/initramfs /usr/src/initram/initramfs.tmp -aR
+chown -R root:root /usr/src/initram/initramfs.tmp
 
 cd /usr/src/initram/initramfs.tmp && (
 for i in $files; do mkdir -p `dirname ${i:1}`; cp -L $i ${i:1}; done
