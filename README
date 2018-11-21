@@ -37,7 +37,7 @@ INSTRUCTIONS
 ===============================================================================
 You need to create the dropbear keys in etc/dropbear
 # dropbearkey -t rsa -f initramfs/etc/dropbear/dropbear_rsa_host_key
-# dropbearkey -t dss -f initramfs/etc/dropbear/dropbear_dss_host_key
+# dropbearkey -t ecdsa -f initramfs/etc/dropbear/dropbear_ecdsa_host_key
 
 Also push your keys in root/.ssh/authorized_keys and
 ./initramfs/owner/.ssh/authorized_keys
@@ -70,7 +70,7 @@ you want you may be able to prevent that from hapening by for example adding
 a sleep clause.
 
 If you want to embed the initram in the kernel use the generated:
-/boot/my-initramfs.cpio
+my-initramfs.cpio
 
 You'll notice some paths are hardcoded this code is intended to be deployed at
 /usr/src/initram
