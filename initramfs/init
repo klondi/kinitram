@@ -8,7 +8,6 @@ rescue_shell() {
 
 # Mount the /proc and /sys filesystems.
 mount -t sysfs none /sys -o rw,nosuid,nodev,noexec,relatime
-echo 1 > /sys/devices/system/cpu/microcode/reload
 mount -t proc none /proc -o rw,nosuid,nodev,noexec,relatime
 mount -t devtmpfs none /dev -o rw,nosuid,relatime
 mkdir -p /dev/pts
