@@ -46,7 +46,6 @@ files="$(findlibs $elf_files)
 /etc/resolv.conf
 /etc/host.conf
 /etc/mdadm.conf
-/lib/firmware/amd-ucode/microcode_amd.bin
 "
 
 #Create the dropbear keys if necessary
@@ -66,11 +65,6 @@ xz -9 --check=crc32 -c < /boot/my-initramfs.cpio > /boot/my-initramfs.cpio.xz
 
 wait
 
-mkdir -p kernel/x86/microcode
-#This is for Intel
-#cat /lib/firmware/intel-ucode/06-17-0a /lib/firmware/intel-ucode/06-25-02 > kernel/x86/microcode/GenuineIntel.bin
-#This is for AMD
-cat /lib/firmware/amd-ucode/microcode_amd.bin > kernel/x86/microcode/AuthenticAMD.bin
 find kernel -print0 | cpio -ov0 --format=newc | cat - /boot/my-initramfs.cpio.gz > /boot/my-initramfs-mc.cpio.gz
 find kernel -print0 | cpio -ov0 --format=newc | cat - /boot/my-initramfs.cpio.xz > /boot/my-initramfs-mc.cpio.xz
 find kernel -print0 | cpio -ov0 --format=newc | cat - /boot/my-initramfs.cpio > /boot/my-initramfs-mc.cpio
