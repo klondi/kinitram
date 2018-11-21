@@ -1,2 +1,2 @@
 #!/bin/busybox sh
-exec /sbin/cryptsetup luksOpen /dev/loop0 ckey
+exec /sbin/cryptsetup open -d - /dev/loop0 ckey

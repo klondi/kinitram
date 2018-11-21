@@ -7,9 +7,9 @@ losetup -r /dev/loop0 /crypto || exit 1
 [ -e /dev/mapper/ckey ] || exit 1
 
 #TODO: after migration add exits
-/sbin/cryptsetup luksOpen /dev/sda3 cryptosda3 --allow-discards -d /dev/mapper/ckey -l 4096
-/sbin/cryptsetup luksOpen /dev/sdb3 cryptosdb3 --allow-discards -d /dev/mapper/ckey -l 4096
-/sbin/cryptsetup luksOpen /dev/sdc3 cryptosdc3 --allow-discards -d /dev/mapper/ckey -l 4096
+/sbin/cryptsetup open /dev/sda3 cryptosda3 --allow-discards -d /dev/mapper/ckey -l 4096
+/sbin/cryptsetup open /dev/sdb3 cryptosdb3 --allow-discards -d /dev/mapper/ckey -l 4096
+/sbin/cryptsetup open /dev/sdc3 cryptosdc3 --allow-discards -d /dev/mapper/ckey -l 4096
 /sbin/cryptsetup close /dev/mapper/ckey
 losetup -d /dev/loop0
 
