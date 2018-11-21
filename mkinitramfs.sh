@@ -3,8 +3,8 @@
 function findlibs {
   for j in $*; do
       if [ -e "$j" ]; then echo "$j";
-      elif [ -e "/lib64/$j" ]; then echo "/lib64/$j"; 
-      elif [ -e "/usr/lib64/$j" ]; then echo "/usr/lib64/$j"; 
+      elif [ -e "/lib64/$j" ]; then echo "/lib64/$j";
+      elif [ -e "/usr/lib64/$j" ]; then echo "/usr/lib64/$j";
       fi;
     for i in $(ldd "$j" | cut '-d ' -f1); do
       if [ -e "$i" ]; then echo "$i";
@@ -49,8 +49,9 @@ files="$(findlibs $elf_files)
 "
 
 #Create the dropbear keys if necessary
-[ -e /usr/src/initram/initramfs/etc/dropbear/dropbear_dss_host_key ] || dropbearkey -t dss -f  /usr/src/initram/initramfs/etc/dropbear/dropbear_dss_host_key
 [ -e /usr/src/initram/initramfs/etc/dropbear/dropbear_rsa_host_key ] || dropbearkey -t rsa -f  /usr/src/initram/initramfs/etc/dropbear/dropbear_rsa_host_key -s 4096
+[ -e /usr/src/initram/initramfs/etc/dropbear/dropbear_ecdsa_host_key ] || dropbearkey -t ecdsa -f  /usr/src/initram/initramfs/etc/dropbear/dropbear_ecdsa_host_key -s 256
+
 
 rm -r /usr/src/initram/initramfs.tmp
 cp /usr/src/initram/initramfs /usr/src/initram/initramfs.tmp -aR
