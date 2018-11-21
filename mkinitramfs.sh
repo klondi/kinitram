@@ -60,14 +60,5 @@ chown -R root:root /usr/src/initram/initramfs.tmp
 cd /usr/src/initram/initramfs.tmp && (
 for i in $files; do mkdir -p `dirname ${i:1}`; cp -L $i ${i:1}; done
 after_copy
-find . -print0 | cpio -ov -0 --format=newc > /boot/my-initramfs.cpio
-gzip -9 < /boot/my-initramfs.cpio > /boot/my-initramfs.cpio.gz &
-xz -9 --check=crc32 -c < /boot/my-initramfs.cpio > /boot/my-initramfs.cpio.xz
-
-wait
-
-find kernel -print0 | cpio -ov0 --format=newc | cat - /boot/my-initramfs.cpio.gz > /boot/my-initramfs-mc.cpio.gz
-find kernel -print0 | cpio -ov0 --format=newc | cat - /boot/my-initramfs.cpio.xz > /boot/my-initramfs-mc.cpio.xz
-find kernel -print0 | cpio -ov0 --format=newc | cat - /boot/my-initramfs.cpio > /boot/my-initramfs-mc.cpio
-rm -r kernel
+find . -print0 | cpio -ov -0 --format=newc | tee ../my-initramfs.cpio | lz4 -16 -c > /boot/my-initramfs.cpio.lz4
 )
