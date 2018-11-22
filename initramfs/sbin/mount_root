@@ -1,5 +1,4 @@
 #!/bin/busybox sh
-
 losetup -r /dev/loop0 /crypto || exit 1
 
 /sbin/local_mount_root

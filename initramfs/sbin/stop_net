@@ -1,5 +1,4 @@
 #!/bin/busybox sh
-
 kill $(cat /var/run/udhcpc)
 ifconfig eth0 down
 vconfig rem eth0.1

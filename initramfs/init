@@ -1,12 +1,11 @@
 #!/bin/busybox sh
-
 rescue_shell() {
    echo "Something went wrong dropping to a rescue shell (don't kill me)"
    busybox --install -s
    exec /bin/bb
 }
 
-# Mount the /proc and /sys filesystems.
+#Mount the /proc and /sys filesystems.
 mount -t sysfs none /sys -o rw,nosuid,nodev,noexec,relatime
 mount -t proc none /proc -o rw,nosuid,nodev,noexec,relatime
 mount -t devtmpfs none /dev -o rw,nosuid,relatime
@@ -30,6 +29,7 @@ sleep 1
 kill -s TERM -1 && sleep 1
 kill -s KILL -1
 
+#Unmount the /proc and /sys filesystems.
 umount /dev/pts
 umount /dev
 umount /sys

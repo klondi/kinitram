@@ -1,8 +1,6 @@
 #!/bin/busybox sh
 # udhcpc script edited by Tim Riker <Tim@Rikers.org>
-
 RESOLV_CONF="/etc/resolv.conf"
-
 
 [ -n "$1" ] || { echo "Error: should be called from udhcpc"; exit 1; }
 
@@ -46,4 +44,3 @@ case "$1" in
 esac
 
 exit 0
-

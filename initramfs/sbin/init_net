@@ -1,5 +1,4 @@
 #!/bin/busybox sh
-
 vconfig add eth0 1
 ifconfig eth0 up
 exec udhcpc -i eth0.1 -p /var/run/udhcpc -n -s /sbin/udhcpc.sh -R

@@ -1,3 +1,2 @@
 #!/bin/busybox sh
-
 kill $(cat /var/run/dropbear.pid)
