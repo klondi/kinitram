@@ -62,15 +62,16 @@ files="$(findlibs $elf_files)
 rm -rf "$mypath/initramfs.tmp"  || fail Cleanup
 cp "$mypath/initramfs" "$mypath/initramfs.tmp" -aR  || fail Create initial components
 
+unset CPIO
+[ -z "$CPIO" ] && cpio > /dev/null 2> /dev/null
+[ -z "$CPIO" -a $? -eq 2 ] && export CPIO=cpio
+[ -z "$CPIO" ] && busybox  cpio > /dev/null 2> /dev/null
+[ -z "$CPIO" -a $? -eq 1 ] && export CPIO="busybox cpio"
+[ -n "$CPIO" ] || fail Find cpio
+
 cd "$mypath"/initramfs.tmp && (
 for i in $files; do mkdir -p "$(dirname ${i:1})" || fail Create dir; cp -L $i ${i:1} || fail Copy file; done
 after_copy
-unset CPIO
-[ -z "$CPIO" ] && acpio > /dev/null 2> /dev/null
-[ -z "$CPIO" -a $? -eq 2 ] && CPIO=cpio
-[ -z "$CPIO" ] && busybox  cpio > /dev/null 2> /dev/null
-[ -z "$CPIO" -a $? -eq 1 ] && CPIO="busybox cpio"
-[ -z "$CPIO" ] || fail Find cpio
 find . -not -name .keep -print0 | $CPIO -H +0:+0 -o -0 --format=newc | tee ../my-initramfs.cpio | lz4 -16 -c > /boot/my-initramfs.cpio.lz4 || fail Create initram
 ) || fail cd into tmpfile
 rm -rf "$mypath/initramfs.tmp"
