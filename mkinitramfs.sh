@@ -72,6 +72,6 @@ unset CPIO
 cd "$mypath"/initramfs.tmp && (
 for i in $files; do mkdir -p "$(dirname ${i:1})" || fail Create dir; cp -L $i ${i:1} || fail Copy file; done
 after_copy
-find . -not -name .keep -print0 | $CPIO -H +0:+0 -o -0 --format=newc | tee ../my-initramfs.cpio | lz4 -16 -l -c > /boot/my-initramfs.cpio.lz4 || fail Create initram
+find . /dev/console -not -name .keep -not -name . -print0 | $CPIO -H +0:+0 -o -0 --format=newc | tee ../my-initramfs.cpio | lz4 -16 -l -c > /boot/my-initramfs.cpio.lz4 || fail Create initram
 ) || fail cd into tmpfile
 rm -rf "$mypath/initramfs.tmp"
