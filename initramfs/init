@@ -3,10 +3,11 @@
 rescue_shell() {
   echo "Something went wrong dropping to a rescue shell (don't kill me)"
   echo "$1" > /error
-  read salt hash < /etc/rpass
   while true; do
     read -s -p "Password: " pass
     echo
+    [ ! -x /usr/bin/argon2 -o ! -e /etc/rpass ] && continue
+    read salt hash < /etc/rpass
     if [ "$(printf "%s" "$pass" | /usr/bin/argon2 "$salt" -id -t 3 -k $((8 * 1024 * 1024)) -p 8 -r)" = "$hash" ]; then
       #/bin/busybox --install -s
       exec /bin/busybox bb
@@ -35,13 +36,13 @@ tpm_notify "init"
 /sbin/init_net || rescue_shell "Network Initialization"
 /sbin/init_dropbear ||  rescue_shell "SSH Initialization"
 #This is not critical for boot since the public IP could be obtained otherwise
-/sbin/init_ipdaemon
+#/sbin/init_ipdaemon
 
 tpm_notify "decrypt"
 /sbin/mount_root || rescue_shell "Root mount"
 tpm_notify "stop"
 
-/sbin/stop_ipdaemon
+#/sbin/stop_ipdaemon
 /sbin/stop_dropbear
 /sbin/stop_net
 
