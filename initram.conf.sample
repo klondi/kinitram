@@ -36,3 +36,6 @@ roottype="btrfs"
 #Root mount options
 #The Comma is needed as we add ro first
 #rootopts=",relatime,discard,fatal_errors=panic,nossd"
+
+#To use ipdaemon set this to the url it should access
+#ipdaemonurl='http://128.66.0.10/update_ip?name=example.com&token=tokendaadasdsdaasads'

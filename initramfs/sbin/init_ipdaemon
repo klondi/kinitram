@@ -1,9 +1,13 @@
 #!/bin/bb
 #TODO: avoid race conditions and similar stuff
-(
-while true; do
-wget 'http://46.16.60.115/onlineService.php?enctype=MD5&n=reboot&p=bf80ff03dbda0de2bea917331a74543e' -q -O /dev/null;
-sleep 300;
-done
-) &
-echo $! > /var/run/ipdaemon
+. /etc/initram.conf
+
+if [ "x$ipdaemonurl" != "x" ]; then
+	(
+		while true; do
+		wget "$ipdaemonurl" -q -O /dev/null;
+		sleep 300;
+		done
+	) &
+	echo $! > /var/run/ipdaemon.pid
+fi

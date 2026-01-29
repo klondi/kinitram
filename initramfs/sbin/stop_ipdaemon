@@ -1,3 +1,7 @@
 #!/bin/bb
-pkill -9 -P $( cat /var/run/ipdaemon )
-kill -9 $( cat /var/run/ipdaemon )
+if [ -e /var/run/ipdaemon.pid ]; then
+	ipdpid=$( cat /var/run/ipdaemon.pid )
+	rm /var/run/ipdaemon.pid
+	pkill -9 -P "$ipdpid"
+	kill -9 "$ipdpid"
+fi
