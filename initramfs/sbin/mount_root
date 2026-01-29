@@ -1,15 +1,17 @@
 #!/bin/busybox sh
 . /etc/initram.conf
 
-[ "x$usetpm" = "xyes" -a -e /sbin/tpm_mount_root ] && /sbin/tpm_mount_root
+if [ "x$usetpm" = "xyes" -a -e /sbin/tpm_mount_root ]; then
+	/sbin/tpm_mount_root
+	#Try to wait for root to log in
+	[ -e /dev/mapper/ckey ] && sleep 10;
+fi
+
 
 if [ "x$localunlock" = "xyes" -a ! -e /dev/mapper/ckey ]; then
 	/bin/mount_crypt &
 	lmrpid=$!
 fi
-
-#Try to wait for root to log in
-sleep 10;
 
 while [ ! -e /dev/mapper/ckey ]; do
 	sleep 1;
