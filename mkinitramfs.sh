@@ -2,6 +2,8 @@
 
 mypath="$(realpath "$( dirname $0 )" )"
 
+. "$mypath/initramfs/etc/initram.conf"
+
 function fail {
   echo $@;
   exit 1;
@@ -37,27 +39,44 @@ function after_copy {
 ln -s busybox bin/bb || fail Link busybox
 }
 
-elf_files="/sbin/mdadm
-/sbin/lvm
-/sbin/btrfs
+#We don't support these nowadays
+#/sbin/mdadm
+#/sbin/lvm
+
+elf_files="/sbin/btrfs
 /sbin/cryptsetup
 /bin/busybox
 /usr/sbin/dropbear
+/usr/bin/argon2
+/usr/lib64/misc/sftp-server
 /lib64/libnss_compat.so.2
 /lib64/libnss_files.so.2
-/lib64/libnss_dns.so.2"
+/lib64/libnss_dns.so.2
+/usr/lib/gcc/x86_64-pc-linux-gnu/$(gcc --version | head -1 | cut -d')' -f 2 | cut -d' ' -f 2| cut -d. -f 1)/libgcc_s.so.1
+"
+
+if [ "x$usetpm" = "xyes" ]; then
+elf_files="$elf_files
+/usr/bin/tpm2
+/usr/lib64/libtss2-tcti-device.so.0"
+fi
+
+#Not used nowadays
+#/etc/mdadm.conf
 
 files="$(findlibs $elf_files)
 /etc/localtime
 /etc/gai.conf
 /etc/resolv.conf
 /etc/host.conf
-/etc/mdadm.conf
+/etc/services
 "
 
 #Create the dropbear keys if necessary
 [ -e "$mypath/initramfs/etc/dropbear/dropbear_rsa_host_key" ] || dropbearkey -t rsa -f  "$mypath/initramfs/etc/dropbear/dropbear_rsa_host_key" -s 4096 || fail Create dropbear keys
 [ -e "$mypath/initramfs/etc/dropbear/dropbear_ecdsa_host_key" ] || dropbearkey -t ecdsa -f  "$mypath/initramfs/etc/dropbear/dropbear_ecdsa_host_key" -s 256 || fail Create dropbear keys
+[ -e "$mypath/initramfs/etc/dropbear/dropbear_ed25519_host_key" ] || dropbearkey -t ed25519 -f  "$mypath/initramfs/etc/dropbear/dropbear_ed25519_host_key" || fail Create dropbear keys
+
 
 rm -rf "$mypath/initramfs.tmp"  || fail Cleanup
 cp "$mypath/initramfs" "$mypath/initramfs.tmp" -aR  || fail Create initial components
@@ -72,6 +91,6 @@ unset CPIO
 cd "$mypath"/initramfs.tmp && (
 for i in $files; do mkdir -p "$(dirname ${i:1})" || fail Create dir; cp -L $i ${i:1} || fail Copy file; done
 after_copy
-find . /dev/console -not -name .keep -not -name . -print0 | $CPIO -H +0:+0 -o -0 --format=newc | tee ../my-initramfs.cpio | lz4 -16 -l -c > /boot/my-initramfs.cpio.lz4 || fail Create initram
+find . /dev/console -not -name .keep -not -name . -print0 | $CPIO -R +0:+0 -o -0 -H newc | tee ../my-initramfs.cpio | lz4 -16 -l -c > /boot/my-initramfs.cpio.lz4 || fail Create initram
 ) || fail cd into tmpfile
 rm -rf "$mypath/initramfs.tmp"

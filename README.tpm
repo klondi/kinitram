@@ -1,0 +1,29 @@
+mkdir initramfs/etc/tpm
+chmod 700 initramfs/etc/tpm
+cd initramfs/etc/tpm
+( printf "\x20\x00"; head -c 32 /dev/urandom; printf "\x20\x00"; head -c 32 /dev/urandom; ) > unique.dat
+tpm2_createprimary -C o -G ecc256:null:aes128cfb -c primary.ctx -u unique.dat
+
+tpm2_pcrreset 16
+printf "kinitram %s" "init" | tpm2_pcrevent 16
+printf "kinitram %s" "decrypt" | tpm2_pcrevent 16
+printf "kinitram %s" "tpm decrypt begin" | tpm2_pcrevent 16
+tpm2_pcrread -o pcr.bin sha256:0,1,2,3,6,7,16
+
+rm -f policy.dat
+tpm2_startauthsession -S tsession.dat
+tpm2_policypcr -f pcr.bin -S tsession.dat -l sha256:0,1,2,3,6,7,15
+tpm2_policylocality -S tsession.dat zero
+tpm2_getpolicydigest -S tsession.dat -o policy.dat
+tpm2_flushcontext tsession.dat && rm tsession.dat
+
+tpm2_startauthsession --policy-session -S session.ctx -c primary.ctx
+dd if=/dev/urandom of=unseal.dat bs=64 count=1
+tpm2_create -S session.ctx -C primary.ctx -u seal.pub -r seal.priv -L policy.dat -i unseal.dat
+tpm2_flushcontext session.ctx && rm session.ctx
+rm -f policy.dat pcr.bin primary.ctx
+
+#Add unseal.dat to ckey
+#You might need to drop the prior keyslot or regenerate crypto cryptsetup luksKillSlot ../../crypto 1
+cryptsetup luksAddKey ../../crypto unseal.dat --pbkdf pbkdf2 --hash sha512 --pbkdf-force-iterations 1000 --force-password --keyslot-cipher aes-xts-plain64 --keyslot-key-size 512
+rm -f unseal.dat

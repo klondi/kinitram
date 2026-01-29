@@ -1,19 +1,39 @@
 #!/bin/busybox sh
-losetup -r /dev/loop0 /crypto || exit 1
+. /etc/initram.conf
 
-/sbin/local_mount_root
+[ "x$usetpm" = "xyes" -a -e /sbin/tpm_mount_root ] && /sbin/tpm_mount_root
+
+if [ "x$localunlock" = "xyes" -a ! -e /dev/mapper/ckey ]; then
+	/bin/mount_crypt &
+	lmrpid=$!
+fi
+
+#Try to wait for root to log in
+sleep 10;
+
+while [ ! -e /dev/mapper/ckey ]; do
+	sleep 1;
+done;
+
+[ "x$localunlock" = "xyes" -a "x$lmrpid" != "x" ] && (
+	kill $lmrpid && sleep 1
+	kill -9 $lmrpid
+) &
+
+while [ -e /root_session ]; do
+	sleep 60;
+done;
 
 [ -e /dev/mapper/ckey ] || exit 1
 
-#TODO: after migration add exits
-/sbin/cryptsetup open /dev/sda3 cryptosda3 --allow-discards -d /dev/mapper/ckey -l 4096
-/sbin/cryptsetup open /dev/sdb3 cryptosdb3 --allow-discards -d /dev/mapper/ckey -l 4096
-/sbin/cryptsetup open /dev/sdc3 cryptosdc3 --allow-discards -d /dev/mapper/ckey -l 4096
+for d in $cryptounlock; do /sbin/cryptsetup open "/dev/$d" "crypto$d" --allow-discards -d /dev/mapper/ckey; done
 /sbin/cryptsetup close /dev/mapper/ckey
-losetup -d /dev/loop0
 
-#Scan for devices
-/sbin/btrfs device scan || exit 1
+if [ "x$roottype" = "xbtrfs" ]; then
+	#Scan for devices
+	/sbin/btrfs device scan $(for d in $rootpath; do echo "/dev/mapper/crypto$d"; done)
+	for d in $rootpath; do /sbin/btrfs device ready "/dev/mapper/crypto$d" && break; done
+fi
 
 # Mount the root filesystem.
-mount -t btrfs /dev/mapper/cryptosda3 /mnt/root -odegraded,ro || mount -t btrfs /dev/mapper/cryptosdb3 /mnt/root -odegraded,ro || exit 1
+for d in $rootpath; do  mount -t "$roottype" "/dev/mapper/crypto$d" /mnt/root "-oro$rootopts" || exit 1 && break; done;

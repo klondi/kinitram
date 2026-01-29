@@ -35,31 +35,45 @@ In case you aren't you agree to take full legal liability for that.
 
 INSTRUCTIONS
 ===============================================================================
-You need to create the dropbear keys in etc/dropbear
-# dropbearkey -t rsa -f initramfs/etc/dropbear/dropbear_rsa_host_key
-# dropbearkey -t ecdsa -f initramfs/etc/dropbear/dropbear_ecdsa_host_key
+The mkinitramfs.sh can generate the dropbear keys in etc/dropbear for you but
+if you want to do it manually use these commands:
+# dropbearkey -t rsa -f "initramfs/etc/dropbear/dropbear_rsa_host_key" -s 4096
+# dropbearkey -t ecdsa -f "initramfs/etc/dropbear/dropbear_ecdsa_host_key" -s 256
+# dropbearkey -t ed25519 -f "initramfs/etc/dropbear/dropbear_ed25519_host_key"
 
 Also push your keys in root/.ssh/authorized_keys and
-./initramfs/owner/.ssh/authorized_keys
+owner/.ssh/authorized_keys
 # cat mykey.pub > initramfs/root/.ssh/authorized_keys
 # cat mykey.pub > initramfs/owner/.ssh/authorized_keys
 
 Finally you need to create the crypto device to hold the master key for
 unlocking other devices, this is done as follows:
-# dd if=/dev/zero of=initramfs/crypto bs=1024 count=2052
-# losetup /dev/loop0 initramfs/crypto
-# /sbin/cryptsetup luksFormat /dev/loop0
-# /sbin/cryptsetup luksOpen /dev/loop0 ckey
+
+Create the loopback device
+# dd if=/dev/zero of=initramfs/crypto bs=$[16384 + 16384 + ((((512/8*4000+2048)*3 + 4095) /4096) * 4096) + 512 ] count=1
+
+Choose whether you will use a strong password or a stronger password hash. Replace yourhostnamehere with the system's hostname.
+If you plan to use a strong random generated password use fast unlocking:
+# cryptsetup luksFormat --cipher aes-xts-plain64 --key-size 512 --sector-size 512 --label crypto --subsystem yourhostnamehere --type luks2 --pbkdf pbkdf2 --hash sha256 --pbkdf-force-iterations 1000 --use-urandom --keyslot-cipher aes-xts-plain64 --keyslot-key-size 512 --align-payload=1 --luks2-metadata-size 16k --luks2-keyslots-size $[(((512/8*4000+2048)*3 + 4095) /4096) * 4]k initramfs/crypto
+
+Otherwise, use argon2 instead, make sure to set the right memory size based on the system's RAM (usually 3/4s of it):
+# cryptsetup luksFormat --cipher aes-xts-plain64 --key-size 512 --sector-size 512 --label crypto --subsystem yourhostnamehere --type luks2 --pbkdf argon2id --pbkdf-memory 1232896 --pbkdf-parallel 4 --pbkdf-force-iterations 16 --use-urandom --keyslot-cipher aes-xts-plain64 --keyslot-key-size 512 --align-payload=1 --luks2-metadata-size 16k --luks2-keyslots-size $[(((512/8*4000+2048)*3 + 4095) /4096) * 4]k initramfs/crypto
+
+Next open the file and create the key
+# /sbin/cryptsetup luksOpen initramfs/crypto ckey
 # dd if=/dev/urandom of=/dev/mapper/ckey
 # sync
+
+Then add the key to all of the HDDs where it is needed:
 # /sbin/cryptsetup luksAddKey /dev/myroothd /dev/mapper/ckey
-# /sbin/cryptsetup close /dev/mapper/ckey
-# losetup -d /dev/loop0
 
 As you can suppose you have to replace /dev/myroothd for the device you want to
 decrypt (this depends on your system but it may be a swap partition and a
 root device or more partitions too). So yeah, this also means you may need to
 call the luksAddKey line more than once.
+
+And finally close the key device
+# /sbin/cryptsetup close /dev/mapper/ckey
 
 The root account will give you an early shell whilst the owner account is
 only allowed to provide the password to mount the main hard drive.
@@ -72,9 +86,23 @@ a sleep clause.
 If you want to embed the initram in the kernel use the generated:
 my-initramfs.cpio
 
-You'll notice some paths are hardcoded this code is intended to be deployed at
+You'll notice some paths are hardcoded, this code is intended to be deployed at
 /usr/src/initram
 This may change on the future though.
+
+TPM
+===============================================================================
+See README.tpm for instructions on how to use the TPM. The idea is that you
+creat a new keyslot in initramfs/crypto with a key the TPM can decrypt for you
+if the PCRs match your expected values. You will likely need to adjust the
+script in bin too if you change the TPM policy.
+
+Root password for physical recovery shell
+===============================================================================
+See mkrootpass for commands to allow you to set up the password for the
+physical recovery shell (opened when something goes wrong during boot).
+
+You'll likely need to adjust the memory size used by argon2.
 
 HACKING
 ===============================================================================

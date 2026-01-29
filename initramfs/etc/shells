@@ -2,3 +2,4 @@
 /bin/bb
 /bin/busybox
 /bin/mount_crypt
+/bin/root_login

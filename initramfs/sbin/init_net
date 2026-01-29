@@ -1,4 +1,22 @@
 #!/bin/busybox sh
-vconfig add eth0 1
-ifconfig eth0 up
-exec udhcpc -i eth0.1 -p /var/run/udhcpc -n -s /sbin/udhcpc.sh -R
+. /etc/initram.conf
+
+hostname "$hostname" || exit 1
+
+
+vdev="$dev"
+if [ "x$vlan" != "x" ]; then
+	dev="$vdev"."$vlan"
+	vconfig add "$vdev" "$vlan" || exit 1
+fi
+
+ip link set dev "$vdev" up || exit 1
+
+if [ "x$nettype" = "xstatic" ]; then
+	for i in $ip; do ip addr add dev "$dev" "$i" || exit 1; done
+	for r in $sroute; do ip route add dev "$dev" "$r" || exit 1; done
+	for gw in $gateway; do ip route add dev "$dev" default via "$gw" || exit 1; done
+	for s in $dns; do echo nameserver "$s"; done > /etc/resolv.conf || exit 1
+else
+	exec udhcpc -i eth0.40 -p /var/run/udhcpc -n -s /sbin/udhcpc.sh -R
+fi

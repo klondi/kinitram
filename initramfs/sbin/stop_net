@@ -1,5 +1,23 @@
 #!/bin/busybox sh
-kill $(cat /var/run/udhcpc)
-ifconfig eth0 down
-vconfig rem eth0.1
 
+. /etc/initram.conf
+
+if [ "x$nettype" != "xstatic" ]; then
+	kill $(cat /var/run/udhcpc)
+fi
+
+vdev="$dev"
+if [ "x$vlan" != "x" ]; then
+        dev="$vdev"."$vlan"
+fi
+
+ip link set dev "$vdev" down
+
+if [ "x$nettype" = "xstatic" ]; then
+	ip -6 route flush dev "$dev"
+	ip -4 route flush dev "$dev"
+	ip -6 addr flush dev "$dev"
+	ip -4 addr flush dev "$dev"
+fi
+
+[ "x$vlan" != "x" ] && vconfig rem "$dev"

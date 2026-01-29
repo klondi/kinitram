@@ -1,0 +1,20 @@
+#!/bin/busybox sh
+
+if [ -e /usr/bin/tpm2 ]; then
+  if [ -e /etc/tpm/unique.dat -a -e /etc/tpm/seal.pub -a -e /etc/tpm/seal.priv ]; then
+    /usr/bin/tpm2 createprimary -C o -G ecc256:null:aes128cfb -c /tmp/primary.ctx -u /etc/tpm/unique.dat
+    if [ -e /tmp/primary.ctx ]; then
+      /usr/bin/tpm2 load -C /tmp/primary.ctx -u /etc/tpm/seal.pub -r /etc/tpm/seal.priv -c /tmp/seal.ctx
+      /usr/bin/tpm2 startauthsession --policy-session -S /tmp/session.ctx -c /tmp/primary.ctx
+    fi
+  fi
+  printf "kinitram %s" "tpm decrypt begin" | /usr/bin/tpm2 pcrevent 15
+  if [ -e /tmp/session.ctx -a -e /tmp/seal.ctx ]; then
+    /usr/bin/tpm2 policypcr -S /tmp/session.ctx -l sha256:0,1,2,3,6,7,15
+    /usr/bin/tpm2 policylocality -S /tmp/session.ctx zero
+    /usr/bin/tpm2 unseal -psession:/tmp/session.ctx -c /tmp/seal.ctx | /bin/mount_crypt
+  fi
+  printf "kinitram %s" "tpm decrypt done" | /usr/bin/tpm2 pcrevent 15
+  [ -e /tmp/session.ctx ] && /usr/bin/tpm2 flushcontext /tmp/session.ctx && rm /tmp/session.ctx
+  rm -f /tmp/seal.ctx /tmp/primary.ctx
+fi

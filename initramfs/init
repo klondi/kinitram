@@ -1,23 +1,45 @@
 #!/bin/busybox sh
+
 rescue_shell() {
-   echo "Something went wrong dropping to a rescue shell (don't kill me)"
-   busybox --install -s
-   exec /bin/bb
+  echo "Something went wrong dropping to a rescue shell (don't kill me)"
+  echo "$1" > /error
+  read salt hash < /etc/rpass
+  while true; do
+    read -s -p "Password: " pass
+    echo
+    if [ "$(printf "%s" "$pass" | /usr/bin/argon2 "$salt" -id -t 3 -k $((8 * 1024 * 1024)) -p 8 -r)" = "$hash" ]; then
+      #/bin/busybox --install -s
+      exec /bin/busybox bb
+    else
+      echo "Wrong password"
+    fi
+  done
 }
 
-#Mount the /proc and /sys filesystems.
+tpm_notify() {
+  if [ -e /usr/bin/tpm2 ]; then
+    printf "kinitram %s" "$1" | /usr/bin/tpm2 pcrevent 15
+  fi
+}
+
+# Mount the /proc and /sys filesystems.
 mount -t sysfs none /sys -o rw,nosuid,nodev,noexec,relatime
 mount -t proc none /proc -o rw,nosuid,nodev,noexec,relatime
 mount -t devtmpfs none /dev -o rw,nosuid,relatime
 mkdir -p /dev/pts
 mount -t devpts devpts /dev/pts -o rw,nosuid,noexec,relatime,gid=5,mode=620
 
-/sbin/init_net || rescue_shell
-/sbin/init_dropbear ||  rescue_shell
+#Ensure we notify the TPM2 of out start
+tpm_notify "init"
+
+/sbin/init_net || rescue_shell "Network Initialization"
+/sbin/init_dropbear ||  rescue_shell "SSH Initialization"
 #This is not critical for boot since the public IP could be obtained otherwise
 /sbin/init_ipdaemon
 
-/sbin/mount_root || rescue_shell
+tpm_notify "decrypt"
+/sbin/mount_root || rescue_shell "Root mount"
+tpm_notify "stop"
 
 /sbin/stop_ipdaemon
 /sbin/stop_dropbear
@@ -29,7 +51,8 @@ sleep 1
 kill -s TERM -1 && sleep 1
 kill -s KILL -1
 
-#Unmount the /proc and /sys filesystems.
+tpm_notify "switch"
+
 umount /dev/pts
 umount /dev
 umount /sys

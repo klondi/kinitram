@@ -1,2 +1,4 @@
 #!/bin/busybox sh
-exec /usr/sbin/dropbear -d etc/dropbear/dropbear_ecdsa_host_key -r etc/dropbear/dropbear_rsa_host_key -m -j -k -p 222 -s -P /var/run/dropbear.pid
+
+. /etc/initram.conf
+exec /usr/sbin/dropbear -m -j -k -p "$ssh_port" -s -P /var/run/dropbear.pid

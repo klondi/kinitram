@@ -1,0 +1,5 @@
+salt=$(tr -dc '[:alnum:]' < /dev/urandom | head -c 22)
+read -sp "Password: " passwd
+hash=$(printf "%s" "$passwd" | argon2 "$salt" -id -t 3 -k $[8 * 1024 * 1024] -p 8 -r)
+printf "%s %s" $salt $hash > initramfs/etc/rpass
+chmod 600 initramfs/etc/rpass

@@ -1,0 +1,4 @@
+#!/bin/busybox sh
+touch /root_session
+echo "Remember to rm /root_session to continue boot"
+exec /bin/bb
