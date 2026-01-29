@@ -2,6 +2,8 @@
 
 mypath="$(realpath "$( dirname $0 )" )"
 
+[ -e "$mypath/initramfs/etc/initram.conf" ] || ( echo "Configure the initramfs/etc/initram.conf file first" )
+
 . "$mypath/initramfs/etc/initram.conf"
 
 function fail {
