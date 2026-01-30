@@ -50,6 +50,7 @@ elf_files="/sbin/btrfs
 /bin/busybox
 /usr/sbin/dropbear
 /usr/bin/argon2
+/usr/lib64/ossl-modules/legacy.so
 /usr/lib64/misc/sftp-server
 /lib64/libnss_compat.so.2
 /lib64/libnss_files.so.2
